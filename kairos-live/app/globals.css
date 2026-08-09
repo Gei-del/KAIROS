@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background:
+    radial-gradient(1100px 600px at 50% -10%, rgba(123, 108, 246, 0.22), transparent 60%),
+    radial-gradient(700px 500px at 85% 110%, rgba(245, 196, 81, 0.1), transparent 60%),
+    #0e0b22;
+  color: #f4efe6;
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The candle: a soft breathing glow behind the AI Host. */
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+.candle-glow { animation: breathe 3.2s ease-in-out infinite; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise 0.4s ease-out both; }
+
+@keyframes pop {
+  0% { transform: scale(0.9); }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+.pop { animation: pop 0.28s ease-out both; }
+
+.tick {
+  transition: width 1s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .candle-glow, .rise, .pop { animation: none; }
+  .tick { transition: none; }
+}
+
+/* Grain-free hairline used to separate sacred "call signs". */
+.rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(245, 196, 81, 0.4), transparent);
+}
