@@ -3,7 +3,6 @@ import { QUESTIONS, byDifficulty } from "@/lib/questions";
 import { fallbackDifficulty, fallbackHostLine } from "@/lib/game";
 import type { Difficulty, Question, RoundSummary } from "@/lib/types";
 
-export const runtime = "edge";
 
 function pickQuestion(diff: Difficulty, askedIds: string[]): Question | null {
   const pool = byDifficulty(diff).filter((q) => !askedIds.includes(q.id));
@@ -21,11 +20,17 @@ async function narrateWithLLM(
   if (!key) return null;
 
   const first = summary.lastDifficulty === null;
+  const history =
+    summary.recentRates && summary.recentRates.length
+      ? ` Historial de aciertos reciente (viejo→nuevo): ${summary.recentRates
+          .map((r) => Math.round(r * 100) + "%")
+          .join(", ")}.`
+      : "";
   const prompt = first
     ? `Eres el anfitrión de una vigilia bíblica en vivo llamada KAIROS LIVE. Va a empezar el juego con ${summary.playerCount} participante(s). En UNA sola frase cálida y con energía (máx 90 caracteres, en español), da la bienvenida y anuncia que empezamos suave. Devuelve SOLO un JSON: {"difficulty":"facil","hostLine":"..."}`
     : `Eres el anfitrión de una vigilia bíblica en vivo (KAIROS LIVE). En la última ronda, ${Math.round(
         summary.correctRate * 100,
-      )}% de ${summary.playerCount} participante(s) acertó. La dificultad anterior fue "${summary.lastDifficulty}". Elige la dificultad de la siguiente pregunta (facil, media o dificil) adaptándote: si les fue bien sube, si les costó baja. Escribe UNA frase de anfitrión (máx 90 caracteres, español) que reaccione al resultado. Devuelve SOLO un JSON: {"difficulty":"...","hostLine":"..."}`;
+      )}% de ${summary.playerCount} participante(s) acertó.${history} La dificultad anterior fue "${summary.lastDifficulty}". Recomienda la dificultad de la siguiente pregunta (facil, media o dificil) adaptándote a la tendencia: si vienen acertando, sube; si les cuesta, baja. Escribe UNA frase de anfitrión (máx 90 caracteres, español) que reaccione al resultado. Devuelve SOLO un JSON: {"difficulty":"...","hostLine":"..."}`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {

@@ -45,7 +45,15 @@ export type Msg =
       tallies: number[]; // votes per option
       hostLine: string;
     }
-  | { type: "leaderboard"; scores: ScoreRow[]; at: number };
+  | { type: "leaderboard"; scores: ScoreRow[]; at: number }
+  | {
+      type: "chat";
+      userId: string;
+      name: string;
+      avatar: string;
+      text: string;
+      at: number;
+    };
 
 export interface ScoreRow {
   userId: string;
@@ -55,8 +63,9 @@ export interface ScoreRow {
 }
 
 export interface RoundSummary {
-  correctRate: number; // 0..1
+  correctRate: number; // 0..1 for the last round
   playerCount: number;
   askedIds: string[];
   lastDifficulty: Difficulty | null;
+  recentRates?: number[]; // accuracy of the last few questions, oldest→newest
 }
