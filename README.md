@@ -4,8 +4,8 @@
 
 Construido para **The Realtime Hackathon by Portal × Crafter Station** (7–9 agosto 2026).
 
-🔗 **Demo en vivo:** _(pega aquí tu URL de Vercel)_
-🎥 **Video (1:30):** _(pega aquí tu URL)_
+🔗 **Demo en vivo:** _https://kairos-mr6vrwikm-gei-dels-projects.vercel.app/_
+🎥 **Video (1:30):** _https://drive.google.com/drive/folders/1FnBU0rI6hsian7MMiPTtxCVJXIsNoAtU_
 
 ---
 
