@@ -29,7 +29,8 @@ que las salas sobrevivan a recargas y cada respuesta se registre una sola vez.
 
 1. Crea un proyecto en Supabase.
 2. Activa `Allow anonymous sign-ins` en Authentication.
-3. Ejecuta `supabase/migrations/001_multiplayer.sql` en el SQL Editor.
+3. Ejecuta, en orden, `supabase/migrations/001_multiplayer.sql` y
+   `supabase/migrations/002_harden_multiplayer.sql` en el SQL Editor.
 4. Copia `.env.example` como `.env.local` y completa:
 
 ```env
