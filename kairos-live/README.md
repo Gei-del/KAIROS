@@ -4,10 +4,12 @@ Juego bíblico multijugador para familias, iglesias y grupos de todas las edades
 participantes entran con un código, responden en tiempo real y celebran juntos mientras
 un anfitrión de IA adapta el nivel y anima la partida.
 
+**Aplicación en vivo:** https://kairos-six-gamma.vercel.app
+
 ## Estado
 
-La versión original de hackathon basada en Portal está siendo migrada a una arquitectura
-persistente. Esta rama usa **Supabase PostgreSQL + Realtime + autenticación anónima** para
+La versión actual retiró Portal y usa una arquitectura persistente con
+**Supabase PostgreSQL + Realtime + autenticación anónima** para
 que las salas sobrevivan a recargas y cada respuesta se registre una sola vez.
 
 ## Principios
