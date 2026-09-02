@@ -115,7 +115,7 @@ export const QUESTIONS: Question[] = [
     difficulty: "dificil",
   },
   {
-    id: "q-apocalipsis",
+    id: "q-patmos",
     prompt: "¿En qué isla escribió Juan el Apocalipsis?",
     options: ["Chipre", "Patmos", "Creta", "Malta"],
     correct: 1,
