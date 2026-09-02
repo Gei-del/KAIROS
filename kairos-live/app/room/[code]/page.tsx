@@ -1,25 +1,25 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ensureAnonymousSession, getSupabase } from "@/lib/supabase";
 import type { Question, RoundSummary } from "@/lib/types";
 
 type Phase="lobby"|"question"|"reveal"|"ended";
-type Room={id:string;phase:Phase;current_round:number;max_rounds:number};
+type Room={id:string;code:string;host_id:string;phase:Phase;current_round:number;max_rounds:number};
 type Player={id:string;user_id:string;name:string;avatar:string;points:number};
 type Round={id:string;number:number;duration_seconds:number;started_at:string;revealed_at:string|null;host_line:string;question:Question};
 type Answer={player_id:string;choice:number;is_correct:boolean};
 
 export default function RoomPage(){
  const {code:raw}=useParams<{code:string}>(), code=raw.toUpperCase();
- const router=useRouter(), isHost=useSearchParams().get("host")==="1";
+ const router=useRouter();
  const [room,setRoom]=useState<Room|null>(null),[players,setPlayers]=useState<Player[]>([]),[round,setRound]=useState<Round|null>(null),[answers,setAnswers]=useState<Answer[]>([]);
  const [uid,setUid]=useState(""),[myAnswer,setMyAnswer]=useState<number|null>(null),[status,setStatus]=useState("conectando…"),[error,setError]=useState(""),[busy,setBusy]=useState(false);
  const load=useCallback(async()=>{
   const rid=sessionStorage.getItem("kairos_room_id"); if(!rid){router.replace(`/?join=${code}`);return}
   const db=getSupabase();
-  const [rr,pp,rounds]=await Promise.all([db.from("rooms").select("id,phase,current_round,max_rounds").eq("id",rid).single(),db.from("players").select("id,user_id,name,avatar,points").eq("room_id",rid).order("points",{ascending:false}),db.from("rounds").select("id,number,duration_seconds,started_at,revealed_at,host_line,question:questions(*)").eq("room_id",rid).order("number",{ascending:false}).limit(1)]);
-  if(rr.error)throw rr.error; setRoom(rr.data as Room);setPlayers((pp.data??[]) as Player[]);
+  const [rr,pp,rounds]=await Promise.all([db.from("rooms").select("id,code,host_id,phase,current_round,max_rounds").eq("id",rid).single(),db.from("players").select("id,user_id,name,avatar,points").eq("room_id",rid).order("points",{ascending:false}),db.from("rounds").select("id,number,duration_seconds,started_at,revealed_at,host_line,question:questions(*)").eq("room_id",rid).order("number",{ascending:false}).limit(1)]);
+  if(rr.error||rr.data.code!==code){sessionStorage.removeItem("kairos_room_id");router.replace(`/?join=${code}`);return} setRoom(rr.data as Room);setPlayers((pp.data??[]) as Player[]);
   const current=rounds.data?.[0] as unknown as Round|undefined;setRound(current??null);
   if(current){const aa=await db.from("answers").select("player_id,choice,is_correct").eq("round_id",current.id);setAnswers((aa.data??[]) as Answer[])}else setAnswers([]);
  },[code,router]);
@@ -29,8 +29,9 @@ export default function RoomPage(){
   }).catch(e=>setError(e.message)); return()=>{if(channel)void getSupabase().removeChannel(channel)};
  },[load]);
  useEffect(()=>{const me=players.find(p=>p.user_id===uid);setMyAnswer(answers.find(a=>a.player_id===me?.id)?.choice??null)},[answers,players,uid]);
+ const isHost=room?.host_id===uid;
 
- async function next(){if(!room||busy)return;setBusy(true);setError("");try{
+ async function next(){if(!room||!isHost||busy)return;setBusy(true);setError("");try{
   if(room.current_round>=room.max_rounds){const x=await getSupabase().from("rooms").update({phase:"ended"}).eq("id",room.id);if(x.error)throw x.error;return}
   const old=await getSupabase().from("rounds").select("question_id").eq("room_id",room.id),askedIds=(old.data??[]).map(x=>x.question_id);
   const summary:RoundSummary={correctRate:answers.length?answers.filter(a=>a.is_correct).length/answers.length:0,playerCount:players.length,askedIds,lastDifficulty:round?.question.difficulty??null};
@@ -40,7 +41,7 @@ export default function RoomPage(){
   const updated=await getSupabase().from("rooms").update({phase:"question",current_round:room.current_round+1,updated_at:new Date().toISOString()}).eq("id",room.id);if(updated.error)throw updated.error;
  }catch(e){setError(e instanceof Error?e.message:"No pudimos iniciar la ronda")}finally{setBusy(false)}}
  async function answer(choice:number){if(!round||myAnswer!==null||room?.phase!=="question")return;setMyAnswer(choice);const elapsed=Date.now()-new Date(round.started_at).getTime();const x=await getSupabase().rpc("submit_answer",{target_round:round.id,selected_choice:choice,elapsed});if(x.error){setMyAnswer(null);setError("La respuesta no se registró o el tiempo terminó")}}
- async function reveal(){if(!room||!round)return;const now=new Date().toISOString(),a=await getSupabase().from("rounds").update({revealed_at:now}).eq("id",round.id).is("revealed_at",null);if(a.error){setError(a.error.message);return}await getSupabase().from("rooms").update({phase:"reveal",updated_at:now}).eq("id",room.id)}
+ async function reveal(){if(!room||!round||!isHost)return;const now=new Date().toISOString(),a=await getSupabase().from("rounds").update({revealed_at:now}).eq("id",round.id).is("revealed_at",null);if(a.error){setError(a.error.message);return}await getSupabase().from("rooms").update({phase:"reveal",updated_at:now}).eq("id",room.id)}
 
  if(!room)return <main className="grid min-h-dvh place-items-center text-center"><div className="text-5xl">🕯️<p className="mt-4 text-base text-lilac">{error||"Preparando la sala…"}</p></div></main>;
  return <main className="mx-auto min-h-dvh max-w-md px-5 py-6"><header className="mb-5 flex justify-between"><div><small className="font-mono uppercase tracking-[.3em] text-lilac">Sala</small><div className="font-mono text-2xl font-bold tracking-[.35em] text-candle">{code}</div></div><div className="h-fit rounded-full border border-white/10 bg-night-2 px-3 py-2 text-xs"><span className="mr-2 text-ember">●</span>{players.length} · {status}</div></header>
