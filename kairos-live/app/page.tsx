@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { makeRoomCode, makeUserId, randomAvatar } from "@/lib/game";
+import { ensureAnonymousSession, getSupabase } from "@/lib/supabase";
 
 const AVATARS = ["🕊️", "✝️", "🔥", "⭐", "🌿", "👑", "📖", "🎺", "🛡️", "🌅", "🍞", "🕯️"];
 
@@ -18,17 +19,50 @@ export default function Home() {
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [joinCode, setJoinCode] = useState("");
   const [mode, setMode] = useState<"idle" | "join">("idle");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
-  function create() {
-    saveMe(name, avatar);
+  useEffect(() => {
+    const invited = new URLSearchParams(window.location.search).get("join")?.toUpperCase() ?? "";
+    if (invited) { setJoinCode(invited); setMode("join"); }
+  }, []);
+
+  async function create() {
+    if (busy) return;
+    setBusy(true); setError("");
+    const me = saveMe(name, avatar);
     const code = makeRoomCode();
-    router.push(`/room/${code}?host=1`);
+    try {
+      await ensureAnonymousSession();
+      const { data, error: rpcError } = await getSupabase().rpc("create_room", {
+        room_code: code, player_name: me.name, player_avatar: me.avatar,
+      });
+      if (rpcError) throw rpcError;
+      sessionStorage.setItem("kairos_room_id", data);
+      router.push(`/room/${code}?host=1`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No pudimos crear la sala.");
+      setBusy(false);
+    }
   }
-  function join() {
+  async function join() {
     const code = joinCode.trim().toUpperCase();
     if (code.length < 4) return;
-    saveMe(name, avatar);
-    router.push(`/room/${code}`);
+    if (busy) return;
+    setBusy(true); setError("");
+    const me = saveMe(name, avatar);
+    try {
+      await ensureAnonymousSession();
+      const { data, error: rpcError } = await getSupabase().rpc("join_room", {
+        room_code: code, player_name: me.name, player_avatar: me.avatar,
+      });
+      if (rpcError) throw rpcError;
+      sessionStorage.setItem("kairos_room_id", data);
+      router.push(`/room/${code}`);
+    } catch {
+      setError("No encontramos esa sala o la partida ya comenzó.");
+      setBusy(false);
+    }
   }
 
   return (
@@ -51,6 +85,7 @@ export default function Home() {
       </header>
 
       <section className="rise rounded-3xl border border-white/10 bg-night-2/70 p-6 backdrop-blur">
+        {error && <p role="alert" className="mb-4 rounded-xl border border-ember/40 bg-ember/10 p-3 text-sm">{error}</p>}
         <label className="mb-2 block font-mono text-[11px] uppercase tracking-widest text-lilac">
           Tu nombre
         </label>
@@ -93,9 +128,10 @@ export default function Home() {
           <div className="mt-7 space-y-3">
             <button
               onClick={create}
+              disabled={busy}
               className="pop w-full rounded-xl bg-candle py-4 font-display text-lg font-bold text-night shadow-halo-lg transition hover:brightness-105"
             >
-              Crear sala
+              {busy ? "Preparando sala…" : "Crear sala"}
             </button>
             <button
               onClick={() => setMode("join")}
@@ -115,9 +151,10 @@ export default function Home() {
             />
             <button
               onClick={join}
+              disabled={busy}
               className="pop w-full rounded-xl bg-candle py-4 font-display text-lg font-bold text-night shadow-halo-lg transition hover:brightness-105"
             >
-              Entrar
+              {busy ? "Entrando…" : "Entrar"}
             </button>
             <button
               onClick={() => setMode("idle")}
@@ -130,7 +167,7 @@ export default function Home() {
       </section>
 
       <p className="mt-8 text-center font-mono text-[10px] uppercase tracking-[0.25em] text-lilac/50">
-        Tiempo real por Portal · IA como anfitrión
+        Multijugador con Supabase · Biblia RV1909
       </p>
     </main>
   );

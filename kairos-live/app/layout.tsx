@@ -22,7 +22,7 @@ const mono = Space_Mono({
 export const metadata: Metadata = {
   title: "KAIROS LIVE — Vigilia interactiva",
   description:
-    "Experiencia bíblica en tiempo real. Un anfitrión de IA, una sala en vivo, y toda la comunidad respondiendo a la vez. Potenciado por Portal.",
+    "Juego bíblico multijugador para familias e iglesias, con salas en vivo, retos por niveles y un anfitrión de IA.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
