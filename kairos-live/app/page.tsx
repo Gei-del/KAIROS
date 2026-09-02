@@ -66,7 +66,7 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-6 py-10">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-6 py-10 sm:py-12">
       <header className="mb-10 text-center">
         <div className="mb-3 flex items-center justify-center gap-2 font-mono text-xs uppercase tracking-[0.3em] text-candle/80">
           <span className="candle-glow inline-block h-2 w-2 rounded-full bg-candle shadow-halo" />
